@@ -1,0 +1,3 @@
+[submodule "go-nsq"]
+	path = go-nsq
+	url = git@github.com:bitly/go-nsq.git
