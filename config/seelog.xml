@@ -1,0 +1,13 @@
+<seelog type="adaptive" mininterval="1000000" maxinterval="100000000" critmsgcount="200">
+    <outputs formatid="default_log">
+        <rollingfile type="size" filename="logs/normal.log" maxsize="100000000" maxrolls="5"/>
+
+        <filter levels="error,critical">
+            <rollingfile type="size" filename="logs/critical.log" maxsize="50000000" maxrolls="5"/>
+        </filter>
+    </outputs>
+
+    <formats>
+        <format id="default_log" format="%Date %Time [%Level] %Msg File:%FullPath Function:%Func Line:%Line%n"/>
+    </formats>
+</seelog>
