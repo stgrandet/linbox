@@ -1,19 +1,25 @@
 package connector
 
 import (
-	"net"
-	"strings"
-	"time"
 	"io"
+	"net"
+	"linbox/connector/service"
+	"time"
 
-	logger "linbox/seelog"
 	"encoding/binary"
+	logger "linbox/seelog"
 )
 
 const (
-	readTimeoutInHour int = 4
-	bufferSize int64 = 1024 * 1024
+	readTimeoutInHour int   = 4
+	bufferSize        int64 = 1024 * 1024
 )
+
+var (
+	service service.ConnectorService
+)
+
+
 
 func StartTcpServer(host, port string) {
 	addr, err := net.ResolveTCPAddr("tcp", ":9000")
@@ -79,12 +85,8 @@ func handleReceivingMsg(conn net.Conn) {
 			break
 		}
 
-		// TODO
-		// Add all possible type here
-		switch msgType {
-			case SYNC_UNREAD_REQUEST:
 
-			default:
+
 
 		}
 
