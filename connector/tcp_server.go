@@ -7,7 +7,7 @@ import (
 	"linbox/connector/service"
 
 	"encoding/binary"
-	logger "linbox/seelog"
+	logger "github.com/cihub/seelog"
 )
 
 const (
