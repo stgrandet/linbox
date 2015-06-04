@@ -15,6 +15,13 @@ const (
 	SEND_MSG_RESPONSE
 )
 
+const (
+	TOPIC_SYNC_UNREAD_REQUEST  = "im_sync_unread_request"
+	TOPIC_READ_ACK_REQUEST     = "im_read_ack_request"
+	TOPIC_PULL_OLD_MSG_REQUEST = "im_pull_old_msg_request"
+	TOPIC_SEND_MSG_REQUEST     = "im_send_msg_request"
+)
+
 type SyncUnreadRequest struct {
 	Rid        uint64 // 客户端请求编号，用于在 response 中确认
 	UserId     uint64 // 用户 id

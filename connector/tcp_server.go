@@ -4,9 +4,8 @@ import (
 	"io"
 	"net"
 	"time"
-	"linbox/connector/service"
-
 	"encoding/binary"
+
 	logger "github.com/cihub/seelog"
 )
 
@@ -18,16 +17,17 @@ const (
 )
 
 var (
-	  connService service.ConnectorService
+	connService ConnectorService
 )
 
-func StartTcpServer(host, port string, service *service.ConnectorService) {
+func StartTcpServer(host, port string, service *ConnectorService) {
 
 	if service == nil {
-		connService = &service.MqService{}
+		connService = &MqService{}
 	} else {
 		connService = service
 	}
+	connService.InitService()
 
 	addr, err := net.ResolveTCPAddr("tcp", ":9000")
 	if err != nil {
@@ -110,6 +110,9 @@ func handleReceivingMsg(conn *net.TCPConn) {
 			break
 		}
 
+		// TODO
+		// 这里需要添加错误处理
+		// 如果信息无法正确下发到 MQ，则直接向客户端发送错误信息，以使客户端能够显示
 		connService.HandleReceivingMsg(msgType, msgLen)
 	}
 }

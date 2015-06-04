@@ -1,9 +1,7 @@
-package service
+package connector
 
 type ConnectorService interface {
-	RegisterTopic()
-	SendToTopic()
-	RegisterToChannel()
+	InitService()
 	HandleReceivingMsg( uint16,  []byte)
 	HandleSendingMsg(uint64, chan<- []byte, chan<- bool)
 }
