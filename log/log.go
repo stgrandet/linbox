@@ -9,7 +9,7 @@ import (
 	"go/build"
 	"sync"
 
-	log "linbox/seelog"
+	log "github.com/cihub/seelog"
 )
 
 const (
