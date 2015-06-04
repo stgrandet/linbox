@@ -3,8 +3,8 @@ package connector
 import (
 	"io"
 	"net"
-	"linbox/connector/service"
 	"time"
+	"linbox/connector/service"
 
 	"encoding/binary"
 	logger "linbox/seelog"
@@ -13,15 +13,21 @@ import (
 const (
 	readTimeoutInHour int   = 4
 	bufferSize        int64 = 1024 * 1024
+	sendingChannelSize int = 100
 )
 
 var (
-	service service.ConnectorService
+	  connService service.ConnectorService
 )
 
+func StartTcpServer(host, port string, service *service.ConnectorService) {
 
+	if service == nil {
+		connService = &service.MqService{}
+	} else {
+		connService = service
+	}
 
-func StartTcpServer(host, port string) {
 	addr, err := net.ResolveTCPAddr("tcp", ":9000")
 	if err != nil {
 		logger.Errorf("Can not resolve tcp address for server. host: %s. port: %s. address string: ")
@@ -42,10 +48,7 @@ func StartTcpServer(host, port string) {
 			continue
 		}
 
-		conn.SetKeepAlive(true)
-
-		go handleReceivingMsg(conn)
-		go handleSendingMsg(conn)
+		handleConnection(conn)
 	}
 }
 
@@ -53,7 +56,25 @@ func StopTcpServer() {
 
 }
 
-func handleReceivingMsg(conn net.Conn) {
+func handleConnection(conn *net.TCPConn) {
+	conn.SetKeepAlive(true)
+
+	userid, err := authenticate(conn)
+	if err != nil {
+		logger.Errorf("Authenticate Information Fail")
+		conn.Close()
+		return
+	}
+
+	go handleReceivingMsg(conn)
+	go handleSendingMsg(conn, userid)
+}
+
+func authenticate(conn *net.TCPConn) (uint64, error) {
+	return 1000, nil
+}
+
+func handleReceivingMsg(conn *net.TCPConn) {
 	for {
 		now := time.Now()
 		timeout := now.Add(time.Hour * readTimeoutInHour)
@@ -85,20 +106,21 @@ func handleReceivingMsg(conn net.Conn) {
 			break
 		}
 
-
-
-
-		}
-
+		connService.HandleReceivingMsg(msgType, msgLen)
 	}
 
 	conn.Close()
 }
 
-func handleSendingMsg(conn net.Conn) {
+func handleSendingMsg(conn *net.TCPConn, userid uint64) {
+	channel := make(chan []byte, sendingChannelSize)
+
+	connService.HandleSendingMsg(userid, channel<-)
+
 	for {
-		break
+
 	}
+
 
 	conn.Close()
 }

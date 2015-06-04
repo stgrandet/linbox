@@ -1,11 +1,11 @@
 package service
 
 type ConnectorService interface {
-	registerTopic()
-	sendToTopic()
-	registerToChannel()
-	handleReceivingMsg()
-	handleSendingMsg()
+	RegisterTopic()
+	SendToTopic()
+	RegisterToChannel()
+	HandleReceivingMsg( uint16,  []byte)
+	HandleSendingMsg()
 }
 
 
