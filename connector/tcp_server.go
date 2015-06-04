@@ -122,6 +122,7 @@ func handleSendingMsg(conn *net.TCPConn, userid uint64) {
 
 	defer func(){
 		quit<-true
+		close(quit)
 	}()
 
 	connService.HandleSendingMsg(userid, channel, quit)
