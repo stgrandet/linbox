@@ -5,7 +5,7 @@ type ConnectorService interface {
 	SendToTopic()
 	RegisterToChannel()
 	HandleReceivingMsg( uint16,  []byte)
-	HandleSendingMsg()
+	HandleSendingMsg(uint64, chan<- []byte, chan<- bool)
 }
 
 

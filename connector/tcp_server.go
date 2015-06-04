@@ -12,6 +12,7 @@ import (
 
 const (
 	readTimeoutInHour int   = 4
+	writeTimeoutInSecond int = 10
 	bufferSize        int64 = 1024 * 1024
 	sendingChannelSize int = 100
 )
@@ -75,10 +76,13 @@ func authenticate(conn *net.TCPConn) (uint64, error) {
 }
 
 func handleReceivingMsg(conn *net.TCPConn) {
+	defer func() {
+		conn.Close()
+	}()
+
 	for {
 		now := time.Now()
 		timeout := now.Add(time.Hour * readTimeoutInHour)
-
 		conn.SetReadDeadline(timeout)
 
 		msgTypeByte := make([]byte, 1)
@@ -108,19 +112,38 @@ func handleReceivingMsg(conn *net.TCPConn) {
 
 		connService.HandleReceivingMsg(msgType, msgLen)
 	}
-
-	conn.Close()
 }
 
 func handleSendingMsg(conn *net.TCPConn, userid uint64) {
-	channel := make(chan []byte, sendingChannelSize)
+	defer conn.Close()
 
-	connService.HandleSendingMsg(userid, channel<-)
+	channel := make(chan []byte, sendingChannelSize)
+	quit := make(chan bool)
+
+	defer func(){
+		quit<-true
+	}()
+
+	connService.HandleSendingMsg(userid, channel, quit)
 
 	for {
+		message, more := <-channel
 
+		if !more {
+			logger.Errorf("The sending channel is closed by connector service. Close connection")
+			break
+		}
+
+		now := time.Now()
+		timeout := now.Add(time.Second * writeTimeoutInSecond)
+		conn.SetWriteDeadline(timeout)
+
+		_, err := conn.Write(message)
+
+		if err != nil {
+			logger.Errorf("Sending messages for user %d Error. Close the connection. Error: %s", userid, err)
+			break
+		}
 	}
-
-
-	conn.Close()
 }
+

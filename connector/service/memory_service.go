@@ -17,6 +17,6 @@ func (*MemoryService) RegisterToChannel() {
 func (*MemoryService) HandleReceivingMsg(msgType uint16, buf []byte) {
 
 }
-func (*MemoryService) HandleSendingMsg() {
+func (*MemoryService) HandleSendingMsg(uint64, chan<- []byte, chan<- bool) {
 
 }
