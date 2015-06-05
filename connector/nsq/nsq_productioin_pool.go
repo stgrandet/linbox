@@ -86,14 +86,14 @@ func initPool() {
 	configs, err := goconfig.ReadConfigFile(configFileName)
 
 	if err != nil {
-		logger.Criticalf("Can not read nsq configs from nsq.cfg. Error: %s", err)
+		logger.Criticalf("Can not read nsq configs from %s. Error: %s", configFileName, err)
 		panic(err)
 	}
 
 	options, err := configs.GetOptions(nsqdConfigSection)
 
 	if err != nil {
-		logger.Criticalf("Can not read nsqd config in nsq.cfg. Error: $s", err)
+		logger.Criticalf("Can not read nsqd config in %s. Error: $s", configFileName, err)
 		panic(err)
 	}
 
@@ -103,7 +103,7 @@ func initPool() {
 		value, err := configs.GetString(nsqdConfigSection, option)
 
 		if err != nil {
-			logger.Errorf("Get error when reading section %s option %s in nsq.cfg. Error: %s", configFileName, option, err)
+			logger.Errorf("Get error when reading section %s option %s in %s. Error: %s", nsqdConfigSection, option, configFileName, err)
 			continue
 		}
 
@@ -111,8 +111,8 @@ func initPool() {
 	}
 
 	if len(addrs) <= 0 {
-		logger.Criticalf("Read 0 configs for nsqd address in nsq.cfg.")
-		panic("Read 0 configs for nsqd address in nsq.cfg.")
+		logger.Criticalf("Read 0 configs for nsqd address in %s.", configFileName)
+		panic("Read 0 configs for nsqd address in config file " + configFileName)
 	}
 
 	pool = make(map[string]*gonsq.Producer)

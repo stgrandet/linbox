@@ -6,7 +6,7 @@ import (
 	logger "github.com/cihub/seelog"
 
 	. "linbox/messages"
-	"nsq"
+	"linbox/connector/nsq"
 )
 
 type MqService struct {
@@ -16,7 +16,10 @@ func (*MqService) InitService() {
 	nsq.InitProducerPool()
 }
 
-func (*MqService) HandleReceivingMsg(msgType uint16, buf []byte) error {
+// TODO
+// 这里需要添加错误处理
+// 如果信息无法正确下发到 MQ，则直接向客户端发送错误信息，以使客户端能够显示
+func (*MqService) HandleReceivingMsg(msgType uint16, buf []byte) {
 	var err error = nil
 
 	switch msgType {
@@ -30,13 +33,15 @@ func (*MqService) HandleReceivingMsg(msgType uint16, buf []byte) error {
 		err = publishMsg(TOPIC_SYNC_UNREAD_REQUEST, buf)
 	default:
 		logger.Errorf("Unknown msgType: %d", msgType)
-		err = errors.New("Unknow msgType: " + msgType)
+		err = errors.New("Unknow msgType ")
 	}
 
-	return err
+	if err != nil {
+
+	}
 }
 
-func (*MqService) HandleSendingMsg(uint64, chan<- []byte, chan<- bool) {
+func (*MqService) HandleSendingMsg(userId uint64, listenChannel chan<- []byte, quit <-chan bool) {
 
 }
 

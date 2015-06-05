@@ -1,26 +1,29 @@
 package connector
 
 import (
+	"encoding/binary"
 	"io"
 	"net"
 	"time"
-	"encoding/binary"
 
+	"encoding/json"
 	logger "github.com/cihub/seelog"
+	. "linbox/messages"
 )
 
 const (
-	readTimeoutInHour int   = 4
-	writeTimeoutInSecond int = 10
-	bufferSize        int64 = 1024 * 1024
-	sendingChannelSize int = 100
+	readTimeoutInHour           int   = 4
+	writeTimeoutInSecond        int   = 10
+	bufferSize                  int64 = 1024 * 1024
+	sendingChannelSize          int   = 100
+	authenticateTimeoutInSecond int   = 60
 )
 
 var (
 	connService ConnectorService
 )
 
-func StartTcpServer(host, port string, service *ConnectorService) {
+func StartTcpServer(host, port string, service ConnectorService) {
 
 	if service == nil {
 		connService = &MqService{}
@@ -71,8 +74,32 @@ func handleConnection(conn *net.TCPConn) {
 	go handleSendingMsg(conn, userid)
 }
 
-func authenticate(conn *net.TCPConn) (uint64, error) {
-	return 1000, nil
+func authenticate(conn *net.TCPConn) (userid uint64, err error) {
+	buf := make([]byte, 1000)
+
+	now := time.Now()
+	timeout := now.Add(time.Second * time.Duration(authenticateTimeoutInSecond))
+
+	conn.SetReadDeadline(timeout)
+
+	length, err := conn.Read(buf)
+	if err != nil {
+		logger.Errorf("Read authenticate Error: %s", err)
+		return 0, err
+	}
+
+	buf = buf[0:length]
+
+	conn.SetReadDeadline(time.Time{})
+
+	authRequest := &AuthRequest{}
+	err = json.Unmarshal(buf, authRequest)
+	if err != nil {
+		logger.Errorf("Convert auth info from json error. Json: %s. Error: %s.", buf, err)
+		return 0, err
+	}
+
+	return authRequest.UserId, nil
 }
 
 func handleReceivingMsg(conn *net.TCPConn) {
@@ -82,7 +109,7 @@ func handleReceivingMsg(conn *net.TCPConn) {
 
 	for {
 		now := time.Now()
-		timeout := now.Add(time.Hour * readTimeoutInHour)
+		timeout := now.Add(time.Hour * time.Duration(readTimeoutInHour))
 		conn.SetReadDeadline(timeout)
 
 		msgTypeByte := make([]byte, 1)
@@ -92,7 +119,8 @@ func handleReceivingMsg(conn *net.TCPConn) {
 			break
 		}
 
-		msgType := int(binary.BigEndian.Uint16(msgTypeByte))
+		msgTypeByte = append(make([]byte, 1), msgTypeByte[0])
+		msgType := uint16(binary.BigEndian.Uint16(msgTypeByte))
 
 		msgLenByte := make([]byte, 4)
 		_, err = io.ReadFull(conn, msgLenByte)
@@ -110,10 +138,8 @@ func handleReceivingMsg(conn *net.TCPConn) {
 			break
 		}
 
-		// TODO
-		// 这里需要添加错误处理
-		// 如果信息无法正确下发到 MQ，则直接向客户端发送错误信息，以使客户端能够显示
-		connService.HandleReceivingMsg(msgType, msgLen)
+		connService.HandleReceivingMsg(msgType, buf)
+
 	}
 }
 
@@ -123,8 +149,8 @@ func handleSendingMsg(conn *net.TCPConn, userid uint64) {
 	channel := make(chan []byte, sendingChannelSize)
 	quit := make(chan bool)
 
-	defer func(){
-		quit<-true
+	defer func() {
+		quit <- true
 		close(quit)
 	}()
 
@@ -139,7 +165,7 @@ func handleSendingMsg(conn *net.TCPConn, userid uint64) {
 		}
 
 		now := time.Now()
-		timeout := now.Add(time.Second * writeTimeoutInSecond)
+		timeout := now.Add(time.Second * time.Duration(writeTimeoutInSecond))
 		conn.SetWriteDeadline(timeout)
 
 		_, err := conn.Write(message)
@@ -150,4 +176,3 @@ func handleSendingMsg(conn *net.TCPConn, userid uint64) {
 		}
 	}
 }
-
