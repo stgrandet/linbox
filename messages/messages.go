@@ -22,6 +22,14 @@ const (
 	TOPIC_SEND_MSG_REQUEST     = "im_send_msg_request"
 )
 
+const (
+	ERROR_WRONG_REQUEST_BODY_FORMAT uint32= iota
+	ERROR_ILLEGAL_SESSION_KEY
+	ERROR_EMPTY_INBOX
+
+	SUCCESS_RESPONSE uint32 = 200
+)
+
 type SyncUnreadRequest struct {
 	Rid        uint64 // 客户端请求编号，用于在 response 中确认
 	UserId     uint64 // 用户 id
@@ -68,8 +76,7 @@ type PullOldMsgRequest struct {
 
 type PullOldMsgResponse struct {
 	Rid       uint64  // 客户端请求编号
-	From      uint64  // 用户 id
-	To        uint64  //通信对方 id
+	UserId    uint64  // 用户 id
 	Msg       Message // 消息内容
 	ErrorCode uint32  // 状态吗, 200 表示成功
 	ErrorMsg  string  // 具体错误信息
@@ -80,13 +87,13 @@ type Message struct {
 	To       uint64  //通信对方 id
 	MsgId    uint64  //服务器端产生的唯一 msg id
 	Body     Content // 消息体
-	sentTime uint64  // 服务器端接收到消息的时间戳
+	SentTime uint64  // 服务器端接收到消息的时间戳
 }
 
 type Content struct {
-	minetype string // 消息内容
-	text     string // 文本内容
-	mediaId  uint64 // 音频或视频文件 id
+	Minetype string // 消息内容
+	Text     string // 文本内容
+	MediaId  uint64 // 音频或视频文件 id
 }
 
 type SendMsgRequest struct {
@@ -104,4 +111,13 @@ type SendMsgResponse struct {
 	sentTime  uint64 // 服务器端接收到消息的时间戳
 	ErrorCode uint32 // 状态吗, 200 表示成功
 	ErrorMsg  string // 具体错误信息
+}
+
+type NewMessage struct {
+	UserId uint64 // 接受者的id
+}
+
+type AuthRequest struct {
+	UserId uint64  // user id
+	AuthMessage string // 用于认证的信息
 }
