@@ -1,4 +1,4 @@
-package connector
+package messages
 
 /*
 	定义了所有的接口所使用的所有 message 类型

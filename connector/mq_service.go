@@ -1,10 +1,12 @@
 package connector
 
 import (
-	"nsq"
+	"errors"
 
 	logger "github.com/cihub/seelog"
-	"errors"
+
+	. "linbox/messages"
+	"nsq"
 )
 
 type MqService struct {
