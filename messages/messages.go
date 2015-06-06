@@ -114,7 +114,7 @@ type SendMsgResponse struct {
 }
 
 type NewMessage struct {
-	UserId uint64 // 接受者的id
+	UserId uint64 // 信息发送方的 userid
 }
 
 type AuthRequest struct {

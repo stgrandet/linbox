@@ -147,7 +147,7 @@ func handleSendingMsg(conn *net.TCPConn, userid uint64) {
 	defer conn.Close()
 
 	channel := make(chan []byte, sendingChannelSize)
-	quit := make(chan bool)
+	quit := make(chan bool, 1)
 
 	defer func() {
 		quit <- true

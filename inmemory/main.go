@@ -16,32 +16,20 @@ import (
 	"time"
 )
 
-
 var (
-	inBox       map[uint64]map[string]UnreadMsg // 未读信息收件箱
-	messageBox  map[uint64][][]byte             // 发送信息箱
-	msgIdRecord map[string]uint64
+	inBox       = make(map[uint64]map[string]UnreadMsg) // 未读信息收件箱
+	messageBox  = make(map[uint64][][]byte)             // 发送信息箱
+	msgIdRecord = make(map[string]uint64)               // msg id 存储器
 
 	inBoxRwMutex      sync.RWMutex // 发件箱读写锁
 	messageBoxRWMutex sync.RWMutex // 消息读写锁
-
 )
 
-
-func init() {
-	inBox = make(map[uint64]map[string]UnreadMsg)
-	messageBox = make(map[uint64][][]byte)
-	msgIdRecord = make(map[string]uint64)
-}
-
 type testConnService struct {
-	msgChan chan []byte
 }
 
+func (s *testConnService) InitService(){
 
-
-func (s *testConnService) InitService() {
-	s.msgChan = make(chan []byte, 100)
 }
 
 func (s *testConnService) HandleReceivingMsg(msgType uint16, message []byte) {
@@ -67,17 +55,17 @@ func (s *testConnService) HandleReceivingMsg(msgType uint16, message []byte) {
 
 			allMessages, ok := inBox[userId]
 			if !ok || len(allMessages) < 0 {
-				s.sendEmptySyncUnreadResponse(rid, userId)
+				sendEmptySyncUnreadResponse(rid, userId)
 				return
 			}
 
 			unReadMsg, ok := allMessages[sessionKey]
 			if !ok {
-				s.sendEmptySyncUnreadResponse(rid, userId)
+				sendEmptySyncUnreadResponse(rid, userId)
 				return
 			}
 
-			s.sendSyncUnreadResponse(rid, userId, unReadMsg)
+			sendSyncUnreadResponse(rid, userId, unReadMsg)
 			return
 		} else {
 
@@ -87,10 +75,10 @@ func (s *testConnService) HandleReceivingMsg(msgType uint16, message []byte) {
 			// 拉取所有的未读信息
 			allMessages, ok := inBox[userId]
 			if !ok || len(allMessages) < 0 {
-				s.sendEmptySyncUnreadResponse(rid, userId)
+				sendEmptySyncUnreadResponse(rid, userId)
 				return
 			} else {
-				s.sendSyncUnreadResponse(rid, userId, allMessages[sessionKey])
+				sendSyncUnreadResponse(rid, userId, allMessages[sessionKey])
 				return
 			}
 		}
@@ -114,13 +102,13 @@ func (s *testConnService) HandleReceivingMsg(msgType uint16, message []byte) {
 
 		allMessages, ok := inBox[userId]
 		if !ok || len(allMessages) < 0 {
-			s.sendErrorReadAckResponse(rid, userId, sessionKey, ERROR_EMPTY_INBOX, "No messages found for user")
+			sendErrorReadAckResponse(rid, userId, sessionKey, ERROR_EMPTY_INBOX, "No messages found for user")
 			return
 		}
 
 		unReadMsg, ok := allMessages[sessionKey]
 		if !ok {
-			s.sendErrorReadAckResponse(rid, userId, sessionKey, ERROR_EMPTY_INBOX, "No messages found for session key")
+			sendErrorReadAckResponse(rid, userId, sessionKey, ERROR_EMPTY_INBOX, "No messages found for session key")
 			return
 		}
 
@@ -138,7 +126,7 @@ func (s *testConnService) HandleReceivingMsg(msgType uint16, message []byte) {
 			allMessages[sessionKey] = unReadMsg
 		}
 
-		s.sendReadAckResponse(rid, userId, sessionKey)
+		sendReadAckResponse(rid, userId, sessionKey)
 
 	case PULL_OLD_MSG_REQUEST:
 		logger.Infof("Received PULL_OLD_MSG_REQUEST message %s", message)
@@ -177,7 +165,7 @@ func (s *testConnService) HandleReceivingMsg(msgType uint16, message []byte) {
 			}
 			msg.SentTime = uint64(time.Now().Nanosecond())
 
-			s.sendPullOldMsgResponse(rid, userId, msg)
+			sendPullOldMsgResponse(rid, userId, msg)
 		}
 
 	case SEND_MSG_REQUEST:
@@ -236,7 +224,7 @@ func (s *testConnService) HandleReceivingMsg(msgType uint16, message []byte) {
 		inBox[to] = allMessages
 
 		if shouldPushNew {
-			pushNew(to)
+			pushNew(from)
 		}
 
 	default:
@@ -245,15 +233,15 @@ func (s *testConnService) HandleReceivingMsg(msgType uint16, message []byte) {
 }
 
 func (s *testConnService) HandleSendingMsg(userid uint64, listenChannel chan<- []byte, quit <-chan bool) {
+	messageChannel := make(chan []byte, 100)
+	go listenMessageBox(userid, messageChannel)
 
-	go s.listenMessageBox(userid)
-
-	go func(){
+	go func() {
 		defer close(listenChannel)
 
 		for {
 			select {
-			case message, more := <-s.msgChan :
+			case message, more := <-messageChannel:
 				if !more {
 					break
 				}
@@ -269,16 +257,16 @@ func (s *testConnService) HandleSendingMsg(userid uint64, listenChannel chan<- [
 	}()
 }
 
-func (s *testConnService) listenMessageBox(userid uint64) {
+func listenMessageBox(userid uint64, msgChannel chan<- []byte) {
 	for {
-		time.Sleep(time.Second * time.Duration(5))
+		time.Sleep(time.Millisecond * time.Duration(500))
 
 		messageBoxRWMutex.Lock()
 
 		if messages, ok := messageBox[userid]; ok {
 			for _, message := range messages {
 				logger.Infof("Before Put message from message box to channel. Message: %s", message)
-				s.msgChan <- message
+				msgChannel <- message
 				logger.Infof("After Put message from message box to channel. Message: %s", message)
 			}
 
@@ -311,7 +299,7 @@ func getRemoteId(sessionKey string, userId uint64) (remoteId uint64, err error) 
 	return 0, errors.New("Can not find remote id from session key " + sessionKey)
 }
 
-func (s *testConnService) sendEmptySyncUnreadResponse(rid, userId uint64) {
+func sendEmptySyncUnreadResponse(rid, userId uint64) {
 	response := SyncUnreadResponse{
 		Rid:       rid,
 		UserId:    userId,
@@ -325,10 +313,10 @@ func (s *testConnService) sendEmptySyncUnreadResponse(rid, userId uint64) {
 		return
 	}
 
-	s.msgChan <- buf
+	sendMessageToUser(userId, buf)
 }
 
-func (s *testConnService) sendSyncUnreadResponse(rid, userId uint64, msgs ...UnreadMsg) {
+func sendSyncUnreadResponse(rid, userId uint64, msgs ...UnreadMsg) {
 	response := SyncUnreadResponse{
 		Rid:       rid,
 		UserId:    userId,
@@ -347,10 +335,10 @@ func (s *testConnService) sendSyncUnreadResponse(rid, userId uint64, msgs ...Unr
 		return
 	}
 
-	s.msgChan <- buf
+	sendMessageToUser(userId, buf)
 }
 
-func (s *testConnService) sendErrorSyncUnreadResponse(rid, userId uint64, errCode uint32, errString string) {
+func sendErrorSyncUnreadResponse(rid, userId uint64, errCode uint32, errString string) {
 	response := SyncUnreadResponse{
 		Rid:       rid,
 		UserId:    userId,
@@ -365,10 +353,10 @@ func (s *testConnService) sendErrorSyncUnreadResponse(rid, userId uint64, errCod
 		return
 	}
 
-	s.msgChan <- buf
+	sendMessageToUser(userId, buf)
 }
 
-func (s *testConnService) sendErrorReadAckResponse(rid, userId uint64, sessionKey string, errCode uint32, errString string) {
+func sendErrorReadAckResponse(rid, userId uint64, sessionKey string, errCode uint32, errString string) {
 	response := ReadAckResponse{
 		Rid:        rid,
 		UserId:     userId,
@@ -384,10 +372,10 @@ func (s *testConnService) sendErrorReadAckResponse(rid, userId uint64, sessionKe
 		return
 	}
 
-	s.msgChan <- buf
+	sendMessageToUser(userId, buf)
 }
 
-func (s *testConnService) sendReadAckResponse(rid, userId uint64, sessionKey string) {
+func sendReadAckResponse(rid, userId uint64, sessionKey string) {
 	response := ReadAckResponse{
 		Rid:        rid,
 		UserId:     userId,
@@ -402,7 +390,7 @@ func (s *testConnService) sendReadAckResponse(rid, userId uint64, sessionKey str
 		return
 	}
 
-	s.msgChan <- buf
+	sendMessageToUser(userId, buf)
 }
 
 func createSessionKey(id1, id2 uint64) string {
@@ -413,7 +401,7 @@ func createSessionKey(id1, id2 uint64) string {
 	}
 }
 
-func (s *testConnService) sendPullOldMsgResponse(rid, userId uint64, msg Message) {
+func sendPullOldMsgResponse(rid, userId uint64, msg Message) {
 	response := PullOldMsgResponse{
 		Rid:    rid,
 		UserId: userId,
@@ -427,12 +415,12 @@ func (s *testConnService) sendPullOldMsgResponse(rid, userId uint64, msg Message
 		return
 	}
 
-	s.msgChan <- buf
+	sendMessageToUser(userId, buf)
 }
 
-func pushNew(remoteId uint64) {
+func pushNew(userId uint64) {
 	message := NewMessage{
-		UserId: remoteId,
+		UserId: userId,
 	}
 
 	buf, err := json.Marshal(message)
@@ -442,19 +430,21 @@ func pushNew(remoteId uint64) {
 		return
 	}
 
+	sendMessageToUser(userId, buf)
+}
+
+func sendMessageToUser(userId uint64, message []byte) {
+	defer messageBoxRWMutex.Unlock()
 	messageBoxRWMutex.Lock()
 
-	msgList, ok := messageBox[remoteId]
+	msgList, ok := messageBox[userId]
 	if !ok {
 		msgList = make([][]byte, 0)
 	}
 
-	msgList = append(msgList, buf)
+	msgList = append(msgList, message)
 
-	messageBox[remoteId] = msgList
-
-	messageBoxRWMutex.Unlock()
-
+	messageBox[userId] = msgList
 }
 
 func main() {
@@ -479,7 +469,6 @@ func main() {
 
 func startServer() {
 	service := &testConnService{}
-	service.InitService()
 
 	connector.StartTcpServer("127.0.0.1", "9000", service)
 }
