@@ -149,7 +149,7 @@ func BuildSendMsgResponseBuf(rid, from, to, msgId, sendTime uint64, errCode uint
 	return buildBuf(SEND_MSG_RESPONSE, buf), nil
 }
 
-func BuildAuthRequest(userId uint64, authMsg map[string]string) (buf []byte, err error) {
+func BuildAuthRequestBuf(userId uint64, authMsg map[string]string) (buf []byte, err error) {
 	message := AuthRequest{
 		UserId:      userId,
 		AuthMessage: authMsg,

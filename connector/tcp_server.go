@@ -63,15 +63,28 @@ func StopTcpServer() {
 func handleConnection(conn *net.TCPConn) {
 	conn.SetKeepAlive(true)
 
-	userid, err := authenticate(conn)
+	userid, err := handleAuth(conn)
 	if err != nil {
-		logger.Errorf("Authenticate Information Fail")
+		logger.Errorf("Authenticate Information Fail. Userid: %d. Error: %s", userid, err)
 		conn.Close()
 		return
 	}
 
 	go handleReceivingMsg(conn)
 	go handleSendingMsg(conn, userid)
+}
+
+func handleAuth(conn *net.TCPConn) (userid uint64, err error) {
+	userid, err = authenticate(conn)
+	if err != nil {
+		logger.Errorf("Authenticate Information Fail")
+		sendFailAuthResponse(conn, userid, ERROR_AUTH_FAIL, err.Error())
+		return
+	}
+
+	err = sendSuccessAuthResponse(conn, userid)
+
+	return
 }
 
 func authenticate(conn *net.TCPConn) (userid uint64, err error) {
@@ -100,6 +113,41 @@ func authenticate(conn *net.TCPConn) (userid uint64, err error) {
 	}
 
 	return authRequest.UserId, nil
+}
+
+func sendSuccessAuthResponse(conn *net.TCPConn, userId uint64) error {
+	message, err := BuildAuthResponseBuf(userId, SUCCESS_RESPONSE, "")
+	if err != nil {
+		logger.Errorf("Build AuthResponseBuf error. UserId: %d. Error: err", userId, err)
+		return err
+	}
+
+	return sendAuthResponse(conn, message)
+}
+
+func sendFailAuthResponse(conn *net.TCPConn, userId uint64, errCode uint32, errMsg string) {
+	message, err := BuildAuthResponseBuf(userId, errCode, errMsg)
+	if err != nil {
+		logger.Errorf("Build AuthResponseBuf error. UserId: %d. Error: err", userId, err)
+		return err
+	}
+
+	return sendAuthResponse(conn, message)
+}
+
+func sendAuthResponse(conn *net.TCPConn, msg []byte) error {
+	now := time.Now()
+	timeout := now.Add(time.Second * time.Duration(60))
+
+	conn.SetWriteDeadline(timeout)
+
+	_, err := conn.Write(msg)
+	if err != nil {
+		logger.Errorf("Send AuthResponse Fail. AuthResponseBuf: %+v. Error: %s", msg, err)
+		return err
+	}
+
+	return nil
 }
 
 func handleReceivingMsg(conn *net.TCPConn) {
