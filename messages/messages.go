@@ -5,14 +5,28 @@ package messages
 */
 
 const (
+	// 客户端同步未读信息
 	SYNC_UNREAD_REQUEST uint16 = iota
 	SYNC_UNREAD_RESPONSE
+
+	// 客户端确认未读信息已被读取
 	READ_ACK_REQUEST
 	READ_ACK_RESPONSE
+
+	// 客户端以反序分页拉取信息
 	PULL_OLD_MSG_REQUEST
 	PULL_OLD_MSG_RESPONSE
+
+	// 客户端发送信息
 	SEND_MSG_REQUEST
 	SEND_MSG_RESPONSE
+
+	// 客户端鉴权，同时用于连接建立后试探网络环境
+	// 鉴权信息必须是网络联通后客户端发送的第一个信息，否则连接被关闭
+	AUTH_REQUEST
+	AUTH_RESPONSE
+
+	NEW_MSG_INFO
 )
 
 const (
@@ -108,16 +122,22 @@ type SendMsgResponse struct {
 	From      uint64 // 用户 id
 	To        uint64 //通信对方 id
 	MsgId     uint64 //服务器端产生的唯一 msg id
-	sentTime  uint64 // 服务器端接收到消息的时间戳
+	SendTime  uint64 // 服务器端接收到消息的时间戳
+	ErrorCode uint32 // 状态吗, 200 表示成功
+	ErrorMsg  string // 具体错误信息
+}
+
+type AuthRequest struct {
+	UserId uint64  // user id
+	AuthMessage map[string]string // 目前为空
+}
+
+type AuthResponse struct {
+	UserId uint64
 	ErrorCode uint32 // 状态吗, 200 表示成功
 	ErrorMsg  string // 具体错误信息
 }
 
 type NewMessage struct {
 	UserId uint64 // 信息发送方的 userid
-}
-
-type AuthRequest struct {
-	UserId uint64  // user id
-	AuthMessage string // 用于认证的信息
 }
