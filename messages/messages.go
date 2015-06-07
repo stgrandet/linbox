@@ -48,99 +48,99 @@ const (
 )
 
 type SyncUnreadRequest struct {
-	Rid        uint64 // 客户端请求编号，用于在 response 中确认
-	UserId     uint64 // 用户 id
-	SessionKey string // 要请求的 session key，如果为 nil，则代表请求所有 sessioin 的未读数据
+	RId        uint64 `json:"rId"`        // 客户端请求编号，用于在 response 中确认
+	FromId     uint64 `json:"fromId"`     // 用户 id
+	SessionKey string `json:"sessionKey"` // 要请求的 session key，如果为 nil，则代表请求所有 sessioin 的未读数据
 }
 
 type SyncUnreadResponse struct {
-	Rid       uint64      // 对应客户端所发送请求的编号
-	UserId    uint64      // 用户 id
-	Unread    []UnreadMsg // 未读信息内容
-	ErrorCode uint32      // 状态吗, 200 表示成功
-	ErrorMsg  string      // 具体错误信息
+	RId       uint64      `json:"rId"`       // 对应客户端所发送请求的编号
+	FromId    uint64      `json:"fromId"`    // 用户 id
+	Unreads   []UnreadMsg `json:"unreads"`   // 未读信息内容
+	ErrorCode uint32      `json:"errorCode"` // 状态吗, 200 表示成功
+	ErrorMsg  string      `json:"errorMsg"`  // 具体错误信息
 }
 
 type UnreadMsg struct {
-	SessionKey string  // 未读信息对应的 session
-	MsgId      uint64  //信息编号
-	Count      uint64  // session 对应的未读信息数
-	Msg        Message // 信息内容
+	SessionKey string  `json:"sessionKey"` // 未读信息对应的 session
+	MsgId      uint64  `json:"msgId"`      //信息编号
+	Count      uint64  `json:"count"`      // session 对应的未读信息数
+	Msg        Message `json:"msg"`        // 信息内容
 }
 
 type ReadAckRequest struct {
-	Rid        uint64 // 客户端请求编号
-	UserId     uint64 // 用户 id
-	SessionKey string // 对应的对话 session
-	MsgId      uint64 // 信息编号
+	RId        uint64 `json:"rId"`        // 客户端请求编号
+	FromId     uint64 `json:"fromId"`     // 用户 id
+	SessionKey string `json:"sessionKey"` // 对应的对话 session
+	MsgId      uint64 `json:"msgId"`      // 信息编号
 }
 
 type ReadAckResponse struct {
-	Rid        uint64 // 客户端请求编号
-	UserId     uint64 // 用户 id
-	SessionKey string // 对应的对话 session
-	ErrorCode  uint32 // 状态吗, 200 表示成功
-	ErrorMsg   string // 具体错误信息
+	RId        uint64 `json:"rId"`        // 客户端请求编号
+	FromId     uint64 `json:"fromId"`     // 用户 id
+	SessionKey string `json:"sessionKey"` // 对应的对话 session
+	ErrorCode  uint32 `json:"errorCode"`  // 状态吗, 200 表示成功
+	ErrorMsg   string `json:"errorMsg"`   // 具体错误信息
 }
 
 type PullOldMsgRequest struct {
-	Rid      uint64 // 客户端请求编号
-	UserId   uint64 // 用户 id
-	RemoteId uint64 //通信对方 id
-	MaxMsgId uint64 // 分页起始 id
-	Limit    uint64 //分业内数量
+	RId      uint64 `json:"rId"`      // 客户端请求编号
+	FromId   uint64 `json:"fromId"`   // 用户 id
+	RemoteId uint64 `json:"remoteId"` //通信对方 id
+	MaxMsgId uint64 `json:"maxMsgId"` // 分页起始 id
+	Limit    uint64 `json:"limit"`    //分业内数量
 }
 
 type PullOldMsgResponse struct {
-	Rid       uint64    // 客户端请求编号
-	UserId    uint64    // 用户 id
-	Msgs       []Message // 消息内容
-	ErrorCode uint32    // 状态吗, 200 表示成功
-	ErrorMsg  string    // 具体错误信息
+	RId       uint64    `json:"rId"`       // 客户端请求编号
+	FromId    uint64    `json:"fromId"`    // 用户 id
+	Msgs      []Message `json:"msgs"`      // 消息内容
+	ErrorCode uint32    `json:"errorCode"` // 状态吗, 200 表示成功
+	ErrorMsg  string    `json:"errorMsg"`  // 具体错误信息
 }
 
 type Message struct {
-	From     uint64  // 用户 id
-	To       uint64  //通信对方 id
-	MsgId    uint64  //服务器端产生的唯一 msg id
-	Body     Content // 消息体
-	SentTime uint64  // 服务器端接收到消息的时间戳
+	FromId     uint64  `json:"fromId"`     // 用户 id
+	ToId       uint64  `json:"toId"`       //通信对方 id
+	FromUserId uint64  `json:"fromUserId"` // 信息发送方的真实 userId
+	MsgId      uint64  `json:"msgId"`      //服务器端产生的唯一 msg id
+	Body       Content `json:"body"`       // 消息体
+	SendTime   uint64  `json:"sendTime"`   // 服务器端接收到消息的时间戳
 }
 
 type Content struct {
-	Minetype string // 消息内容
-	Text     string // 文本内容
-	MediaId  uint64 // 音频或视频文件 id
+	MineType string `json:"mineType"` // 消息内容
+	Text     string `json:"text"`     // 文本内容
 }
 
 type SendMsgRequest struct {
-	Rid  uint64    // 客户端请求编号
-	From uint64    // 用户 id
-	To   uint64    //通信对方 id
-	Msgs []Message //消息体, 可以一次携带多个消息
+	RId    uint64  `json:"rId"`    // 客户端请求编号
+	FromId uint64  `json:"fromId"` // 用户 id
+	ToId   uint64  `json:"toId"`   //通信对方 id
+	Msg    Message `json:"msg"`    //消息
 }
 
 type SendMsgResponse struct {
-	Rid       uint64 // 客户端请求编号
-	From      uint64 // 用户 id
-	To        uint64 //通信对方 id
-	MaxMsgId  uint64 //服务器端产生的唯一 msg id, 如果有多个消息，则回传最大 id
-	SendTime  uint64 // 服务器端接收到消息的时间戳
-	ErrorCode uint32 // 状态吗, 200 表示成功
-	ErrorMsg  string // 具体错误信息
+	RId       uint64 `json:"rId"`       // 客户端请求编号
+	FromId    uint64 `json:"fromId"`    // 用户 id
+	ToId      uint64 `json:"toId"`      //通信对方 id
+	MaxMsgId  uint64 `json:"maxMsgId"`  //服务器端产生的唯一 msg id, 如果有多个消息，则回传最大 id
+	SendTime  uint64 `json:"sendTime"`  // 服务器端接收到消息的时间戳
+	ErrorCode uint32 `json:"errorCode"` // 状态吗, 200 表示成功
+	ErrorMsg  string `json:"errorMsg"`  // 具体错误信息
 }
 
 type AuthRequest struct {
-	UserId      uint64            // user id
-	AuthMessage map[string]string // 目前为空
+	FromId      uint64            `json:"fromId"`      // user id
+	AuthMessage map[string]string `json:"authMessage"` // 目前为空
 }
 
 type AuthResponse struct {
-	UserId    uint64
-	ErrorCode uint32 // 状态吗, 200 表示成功
-	ErrorMsg  string // 具体错误信息
+	FromId    uint64 `json:"fromId"`
+	ErrorCode uint32 `json:"errorCode"` // 状态吗, 200 表示成功
+	ErrorMsg  string `json:"errorMsg"`  // 具体错误信息
 }
 
 type NewMessage struct {
-	UserId uint64 // 信息发送方的 userid
+	FromId uint64 `json:"fromId"` // 信息发送方的 FromId
 }

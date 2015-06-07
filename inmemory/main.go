@@ -231,7 +231,7 @@ func startClient(userId uint64) {
 					continue
 				}
 
-				remoteId := newMsg.UserId
+				remoteId := newMsg.FromId
 				sessionKey := createSessionKey(userId, remoteId)
 
 				sendSyncUnreadRequest(conn, userId, sessionKey)
@@ -246,7 +246,7 @@ func startClient(userId uint64) {
 					continue
 				}
 
-				unreadMsgs := response.Unread
+				unreadMsgs := response.Unreads
 				for _, unread := range unreadMsgs {
 					remoteId, err := getRemoteId(unread.SessionKey, userId)
 					if err != nil {
@@ -306,18 +306,15 @@ func sendPullOldMsgRequest(conn *net.TCPConn, from, to, msgId, limit uint64) {
 
 func sendSendMsgRequest(conn *net.TCPConn, from, to uint64, msg string) {
 	message := Message{
-		From: from,
-		To:   to,
+		FromId: from,
+		ToId:   to,
 		Body: Content {
-			Minetype: "plain/text",
+			MineType: "plain/text",
 			Text:     msg,
 		},
 	}
 
-	msgs := make([]Message, 1)
-	msgs[0] = message
-
-	buf, err := BuildSendMsgRequestBuf(from, to, msgs)
+	buf, err := BuildSendMsgRequestBuf(from, to, message)
 	if err != nil {
 		logger.Errorf("Build PULL_OLD_MSG_REQUEST error. Error: %s", err)
 		return

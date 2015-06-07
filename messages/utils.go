@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-func BuildSyncUnreadRequestBuf(userId uint64, sessionKey string) (buf []byte, err error) {
+func BuildSyncUnreadRequestBuf(useRId uint64, sessionKey string) (buf []byte, err error) {
 	message := SyncUnreadRequest{
-		Rid:        uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
-		UserId:     userId,
+		RId:        uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
+		FromId:     useRId,
 		SessionKey: sessionKey,
 	}
 
@@ -23,11 +23,11 @@ func BuildSyncUnreadRequestBuf(userId uint64, sessionKey string) (buf []byte, er
 	return buildBuf(SYNC_UNREAD_REQUEST, buf), nil
 }
 
-func BuildSyncUnreadResponseBuf(rid uint64, userId uint64, unreadMsgs []UnreadMsg, errCode uint32, errMsg string) (buf []byte, err error) {
+func BuildSyncUnreadResponseBuf(RId uint64, useRId uint64, unreadMsgs []UnreadMsg, errCode uint32, errMsg string) (buf []byte, err error) {
 	message := SyncUnreadResponse{
-		Rid:       rid,
-		UserId:    userId,
-		Unread:    unreadMsgs,
+		RId:       RId,
+		FromId:    useRId,
+		Unreads:    unreadMsgs,
 		ErrorCode: errCode,
 		ErrorMsg:  errMsg,
 	}
@@ -41,10 +41,10 @@ func BuildSyncUnreadResponseBuf(rid uint64, userId uint64, unreadMsgs []UnreadMs
 	return buildBuf(SYNC_UNREAD_RESPONSE, buf), nil
 }
 
-func BuildReadAckRequestBuf(userId uint64, sessionKey string, msgId uint64) (buf []byte, err error) {
+func BuildReadAckRequestBuf(useRId uint64, sessionKey string, msgId uint64) (buf []byte, err error) {
 	message := ReadAckRequest{
-		Rid:        uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
-		UserId:     userId,
+		RId:        uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
+		FromId:     useRId,
 		SessionKey: sessionKey,
 		MsgId:      msgId,
 	}
@@ -58,10 +58,10 @@ func BuildReadAckRequestBuf(userId uint64, sessionKey string, msgId uint64) (buf
 	return buildBuf(READ_ACK_REQUEST, buf), nil
 }
 
-func BuildReadAckResponseBuf(rid, userId uint64, sessionKey string, errCode uint32, errMsg string) (buf []byte, err error) {
+func BuildReadAckResponseBuf(RId, useRId uint64, sessionKey string, errCode uint32, errMsg string) (buf []byte, err error) {
 	message := ReadAckResponse{
-		Rid:        rid,
-		UserId:     userId,
+		RId:        RId,
+		FromId:     useRId,
 		SessionKey: sessionKey,
 		ErrorCode:  errCode,
 		ErrorMsg:   errMsg,
@@ -76,10 +76,10 @@ func BuildReadAckResponseBuf(rid, userId uint64, sessionKey string, errCode uint
 	return buildBuf(READ_ACK_RESPONSE, buf), nil
 }
 
-func BuildPullOldMsgRequestBuf(userId, remoteId, maxMsgId, limit uint64) (buf []byte, err error) {
+func BuildPullOldMsgRequestBuf(useRId, remoteId, maxMsgId, limit uint64) (buf []byte, err error) {
 	message := PullOldMsgRequest{
-		Rid:      uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
-		UserId:   userId,
+		RId:      uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
+		FromId:   useRId,
 		RemoteId: remoteId,
 		MaxMsgId: maxMsgId,
 		Limit:    limit,
@@ -94,10 +94,10 @@ func BuildPullOldMsgRequestBuf(userId, remoteId, maxMsgId, limit uint64) (buf []
 	return buildBuf(PULL_OLD_MSG_REQUEST, buf), nil
 }
 
-func BuildPullOldMsgResponseBuf(rid, userId uint64, msgs []Message, errCode uint32, errMsg string) (buf []byte, err error) {
+func BuildPullOldMsgResponseBuf(RId, useRId uint64, msgs []Message, errCode uint32, errMsg string) (buf []byte, err error) {
 	message := PullOldMsgResponse{
-		Rid:       rid,
-		UserId:    userId,
+		RId:       RId,
+		FromId:    useRId,
 		Msgs:       msgs,
 		ErrorCode: errCode,
 		ErrorMsg:  errMsg,
@@ -112,12 +112,12 @@ func BuildPullOldMsgResponseBuf(rid, userId uint64, msgs []Message, errCode uint
 	return buildBuf(PULL_OLD_MSG_RESPONSE, buf), nil
 }
 
-func BuildSendMsgRequestBuf(from, to uint64, msgs []Message) (buf []byte, err error) {
+func BuildSendMsgRequestBuf(from, to uint64, msg Message) (buf []byte, err error) {
 	message := SendMsgRequest{
-		Rid:  uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
-		From: from,
-		To:   to,
-		Msgs:  msgs,
+		RId:  uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
+		FromId: from,
+		ToId:   to,
+		Msg:  msg,
 	}
 
 	buf, err = json.Marshal(message)
@@ -129,11 +129,11 @@ func BuildSendMsgRequestBuf(from, to uint64, msgs []Message) (buf []byte, err er
 	return buildBuf(SEND_MSG_REQUEST, buf), nil
 }
 
-func BuildSendMsgResponseBuf(rid, from, to, msgId, sendTime uint64, errCode uint32, errMsg string) (buf []byte, err error) {
+func BuildSendMsgResponseBuf(RId, from, to, msgId, sendTime uint64, errCode uint32, errMsg string) (buf []byte, err error) {
 	message := SendMsgResponse{
-		Rid:       rid,
-		From:      from,
-		To:        to,
+		RId:       RId,
+		FromId:      from,
+		ToId:        to,
 		MaxMsgId:     msgId,
 		SendTime:  sendTime,
 		ErrorCode: errCode,
@@ -149,9 +149,9 @@ func BuildSendMsgResponseBuf(rid, from, to, msgId, sendTime uint64, errCode uint
 	return buildBuf(SEND_MSG_RESPONSE, buf), nil
 }
 
-func BuildAuthRequestBuf(userId uint64, authMsg map[string]string) (buf []byte, err error) {
+func BuildAuthRequestBuf(useRId uint64, authMsg map[string]string) (buf []byte, err error) {
 	message := AuthRequest{
-		UserId:      userId,
+		FromId:      useRId,
 		AuthMessage: authMsg,
 	}
 
@@ -164,9 +164,9 @@ func BuildAuthRequestBuf(userId uint64, authMsg map[string]string) (buf []byte, 
 	return buildBuf(AUTH_REQUEST, buf), nil
 }
 
-func BuildAuthResponseBuf(userId uint64, errCode uint32, errMsg string) (buf []byte, err error) {
+func BuildAuthResponseBuf(useRId uint64, errCode uint32, errMsg string) (buf []byte, err error) {
 	message := AuthResponse{
-		UserId:    userId,
+		FromId:    useRId,
 		ErrorCode: errCode,
 		ErrorMsg:  errMsg,
 	}
@@ -180,9 +180,9 @@ func BuildAuthResponseBuf(userId uint64, errCode uint32, errMsg string) (buf []b
 	return buildBuf(AUTH_RESPONSE, buf), nil
 }
 
-func BuildNewMessageBuf(userId uint64) (buf []byte, err error) {
+func BuildNewMessageBuf(useRId uint64) (buf []byte, err error) {
 	message := NewMessage{
-		UserId: userId,
+		FromId: useRId,
 	}
 
 	buf, err = json.Marshal(message)

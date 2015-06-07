@@ -109,7 +109,7 @@ func authenticate(conn *net.TCPConn) (userid uint64, err error) {
 		return 0, err
 	}
 
-	return authRequest.UserId, nil
+	return authRequest.FromId, nil
 }
 
 func sendSuccessAuthResponse(conn *net.TCPConn, userId uint64) error {

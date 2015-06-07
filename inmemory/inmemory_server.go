@@ -55,8 +55,8 @@ func (*testConnService) handleSyncUnreadRequest(msg []byte) {
 		return
 	}
 
-	rid := syncUnreadRequest.Rid
-	userId := syncUnreadRequest.UserId
+	rid := syncUnreadRequest.RId
+	userId := syncUnreadRequest.FromId
 	sessionKey := syncUnreadRequest.SessionKey
 
 	if sessionKey != "" {
@@ -104,8 +104,8 @@ func (*testConnService) handleReadAckRequest(msg []byte) {
 		return
 	}
 
-	rid := readAckRequest.Rid
-	userId := readAckRequest.UserId
+	rid := readAckRequest.RId
+	userId := readAckRequest.FromId
 	sessionKey := readAckRequest.SessionKey
 	msgId := readAckRequest.MsgId
 
@@ -151,8 +151,8 @@ func (*testConnService) handlePullOldMsgRequest(msg []byte) {
 		return
 	}
 
-	rid := pullOldRequest.Rid
-	userId := pullOldRequest.UserId
+	rid := pullOldRequest.RId
+	userId := pullOldRequest.FromId
 	remoteId := pullOldRequest.RemoteId
 	maxMsgId := pullOldRequest.MaxMsgId
 	limit := pullOldRequest.Limit
@@ -168,37 +168,32 @@ func (*testConnService) handlePullOldMsgRequest(msg []byte) {
 	sendSuccessPullOldMsgResponse(rid, userId, msgs)
 }
 
-func (*testConnService) handleSendMsgRequest(msg []byte) {
-	logger.Infof("Received SEND_MSG_REQUEST message %s", msg)
+func (*testConnService) handleSendMsgRequest(request []byte) {
+	logger.Infof("Received SEND_MSG_REQUEST message %s", request)
 
 	sendMsgRequest := &SendMsgRequest{}
-	err := json.Unmarshal(msg, sendMsgRequest)
+	err := json.Unmarshal(request, sendMsgRequest)
 	if err != nil {
 		logger.Errorf("Can not parse SendMsgRequest from json. Error: %s", err)
 		return
 	}
 
-	rid := sendMsgRequest.Rid
-	from := sendMsgRequest.From
-	to := sendMsgRequest.To
-	msgs := sendMsgRequest.Msgs
+	rid := sendMsgRequest.RId
+	from := sendMsgRequest.FromId
+	to := sendMsgRequest.ToId
+	msg := sendMsgRequest.Msg
 	sessionKey := createSessionKey(from, to)
 
-	if len(msgs) <= 0 {
-		logger.Warnf("Get a empty message list in SEND_MSG_REQUEST. Request: %+v", sendMsgRequest)
-	}
+	msg = genMsgId(sessionKey, msg)[0]
+	persistMsg(sessionKey, msg)
 
-	msgs = genMsgId(sessionKey, msgs)
-	persistMsg(sessionKey, msgs)
-
-	maxMsg := msgs[len(msgs)-1]
-	shouldPushNew := addToInBox(sessionKey, to, maxMsg)
+	shouldPushNew := addToInBox(sessionKey, to, msg)
 
 	if shouldPushNew {
 		pushNew(from, to)
 	}
 
-	sendSendMsgResponse(from, to, rid, maxMsg.MsgId, sessionKey)
+	sendSendMsgResponse(from, to, rid, msg.MsgId, sessionKey)
 }
 
 func (s *testConnService) HandleSendingMsg(userid uint64, listenChannel chan<- []byte, quit <-chan bool) {
@@ -231,7 +226,7 @@ func (s *testConnService) HandleSendingMsg(userid uint64, listenChannel chan<- [
 	}()
 }
 
-func genMsgId(sessionKey string, msgs []Message) []Message {
+func genMsgId(sessionKey string, msgs ...Message) []Message {
 	defer msgIdMutex.Unlock()
 	msgIdMutex.Lock()
 
@@ -276,7 +271,7 @@ func getPersistMsg(sessionKey string, maxMsgID uint64, count uint64) (msgs []Mes
 	return
 }
 
-func persistMsg(sessionKey string, msgs []Message) {
+func persistMsg(sessionKey string, msgs ...Message) {
 	defer messageCenterRwMutex.Unlock()
 	messageCenterRwMutex.Lock()
 
