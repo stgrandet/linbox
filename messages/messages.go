@@ -37,9 +37,10 @@ const (
 )
 
 const (
-	ERROR_WRONG_REQUEST_BODY_FORMAT uint32= iota
+	ERROR_WRONG_REQUEST_BODY_FORMAT uint32 = iota
 	ERROR_ILLEGAL_SESSION_KEY
 	ERROR_EMPTY_INBOX
+	ERROR_MSG_NOT_EXIST
 
 	ERROR_AUTH_FAIL
 
@@ -91,11 +92,11 @@ type PullOldMsgRequest struct {
 }
 
 type PullOldMsgResponse struct {
-	Rid       uint64  // 客户端请求编号
-	UserId    uint64  // 用户 id
-	Msg       Message // 消息内容
-	ErrorCode uint32  // 状态吗, 200 表示成功
-	ErrorMsg  string  // 具体错误信息
+	Rid       uint64    // 客户端请求编号
+	UserId    uint64    // 用户 id
+	Msgs       []Message // 消息内容
+	ErrorCode uint32    // 状态吗, 200 表示成功
+	ErrorMsg  string    // 具体错误信息
 }
 
 type Message struct {
@@ -113,29 +114,29 @@ type Content struct {
 }
 
 type SendMsgRequest struct {
-	Rid  uint64  // 客户端请求编号
-	From uint64  // 用户 id
-	To   uint64  //通信对方 id
-	Msg  Message //消息体
+	Rid  uint64    // 客户端请求编号
+	From uint64    // 用户 id
+	To   uint64    //通信对方 id
+	Msgs []Message //消息体, 可以一次携带多个消息
 }
 
 type SendMsgResponse struct {
 	Rid       uint64 // 客户端请求编号
 	From      uint64 // 用户 id
 	To        uint64 //通信对方 id
-	MsgId     uint64 //服务器端产生的唯一 msg id
+	MaxMsgId  uint64 //服务器端产生的唯一 msg id, 如果有多个消息，则回传最大 id
 	SendTime  uint64 // 服务器端接收到消息的时间戳
 	ErrorCode uint32 // 状态吗, 200 表示成功
 	ErrorMsg  string // 具体错误信息
 }
 
 type AuthRequest struct {
-	UserId uint64  // user id
+	UserId      uint64            // user id
 	AuthMessage map[string]string // 目前为空
 }
 
 type AuthResponse struct {
-	UserId uint64
+	UserId    uint64
 	ErrorCode uint32 // 状态吗, 200 表示成功
 	ErrorMsg  string // 具体错误信息
 }

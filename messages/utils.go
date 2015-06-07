@@ -20,10 +20,10 @@ func BuildSyncUnreadRequestBuf(userId uint64, sessionKey string) (buf []byte, er
 		return buf, err
 	}
 
-	return buildBuf(SYNC_UNREAD_REQUEST, buf)
+	return buildBuf(SYNC_UNREAD_REQUEST, buf), nil
 }
 
-func BuildSynbcUnreadResponseBuf(rid uint64, userId uint64, unreadMsgs []UnreadMsg, errCode uint32, errMsg string) (buf []byte, err error) {
+func BuildSyncUnreadResponseBuf(rid uint64, userId uint64, unreadMsgs []UnreadMsg, errCode uint32, errMsg string) (buf []byte, err error) {
 	message := SyncUnreadResponse{
 		Rid:       rid,
 		UserId:    userId,
@@ -38,7 +38,7 @@ func BuildSynbcUnreadResponseBuf(rid uint64, userId uint64, unreadMsgs []UnreadM
 		return buf, err
 	}
 
-	return buildBuf(SYNC_UNREAD_RESPONSE, buf)
+	return buildBuf(SYNC_UNREAD_RESPONSE, buf), nil
 }
 
 func BuildReadAckRequestBuf(userId uint64, sessionKey string, msgId uint64) (buf []byte, err error) {
@@ -91,14 +91,14 @@ func BuildPullOldMsgRequestBuf(userId, remoteId, maxMsgId, limit uint64) (buf []
 		return buf, err
 	}
 
-	return buildBuf(READ_ACK_RESPONSE, buf), nil
+	return buildBuf(PULL_OLD_MSG_REQUEST, buf), nil
 }
 
-func BuildPullOldMsgResponseBuf(rid, userId uint64, msg Message, errCode uint32, errMsg string) (buf []byte, err error) {
+func BuildPullOldMsgResponseBuf(rid, userId uint64, msgs []Message, errCode uint32, errMsg string) (buf []byte, err error) {
 	message := PullOldMsgResponse{
 		Rid:       rid,
 		UserId:    userId,
-		Msg:       msg,
+		Msgs:       msgs,
 		ErrorCode: errCode,
 		ErrorMsg:  errMsg,
 	}
@@ -112,12 +112,12 @@ func BuildPullOldMsgResponseBuf(rid, userId uint64, msg Message, errCode uint32,
 	return buildBuf(PULL_OLD_MSG_RESPONSE, buf), nil
 }
 
-func BuildSendMsgRequestBuf(from, to uint64, msg Message) (buf []byte, err error) {
+func BuildSendMsgRequestBuf(from, to uint64, msgs []Message) (buf []byte, err error) {
 	message := SendMsgRequest{
 		Rid:  uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
 		From: from,
 		To:   to,
-		Msg:  msg,
+		Msgs:  msgs,
 	}
 
 	buf, err = json.Marshal(message)
@@ -134,7 +134,7 @@ func BuildSendMsgResponseBuf(rid, from, to, msgId, sendTime uint64, errCode uint
 		Rid:       rid,
 		From:      from,
 		To:        to,
-		MsgId:     msgId,
+		MaxMsgId:     msgId,
 		SendTime:  sendTime,
 		ErrorCode: errCode,
 		ErrorMsg:  errMsg,
