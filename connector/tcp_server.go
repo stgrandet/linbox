@@ -94,15 +94,12 @@ func authenticate(conn *net.TCPConn) (userid uint64, err error) {
 	timeout := now.Add(time.Second * time.Duration(authenticateTimeoutInSecond))
 
 	conn.SetReadDeadline(timeout)
-
 	length, err := conn.Read(buf)
 	if err != nil {
 		logger.Errorf("Read authenticate Error: %s", err)
 		return 0, err
 	}
-
-	buf = buf[0:length]
-
+	buf = buf[5:length]
 	conn.SetReadDeadline(time.Time{})
 
 	authRequest := &AuthRequest{}
@@ -125,7 +122,7 @@ func sendSuccessAuthResponse(conn *net.TCPConn, userId uint64) error {
 	return sendAuthResponse(conn, message)
 }
 
-func sendFailAuthResponse(conn *net.TCPConn, userId uint64, errCode uint32, errMsg string) {
+func sendFailAuthResponse(conn *net.TCPConn, userId uint64, errCode uint32, errMsg string) error {
 	message, err := BuildAuthResponseBuf(userId, errCode, errMsg)
 	if err != nil {
 		logger.Errorf("Build AuthResponseBuf error. UserId: %d. Error: err", userId, err)
