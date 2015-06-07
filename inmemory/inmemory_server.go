@@ -195,7 +195,7 @@ func (*testConnService) handleSendMsgRequest(msg []byte) {
 	shouldPushNew := addToInBox(sessionKey, to, maxMsg)
 
 	if shouldPushNew {
-		pushNew(from)
+		pushNew(from, to)
 	}
 
 	sendSendMsgResponse(from, to, rid, maxMsg.MsgId, sessionKey)
@@ -205,7 +205,7 @@ func (s *testConnService) HandleSendingMsg(userid uint64, listenChannel chan<- [
 	go func() {
 		defer close(listenChannel)
 
-	loop:
+		loop:
 		for {
 			timer := time.NewTimer(time.Millisecond * time.Duration(500))
 
@@ -240,9 +240,10 @@ func genMsgId(sessionKey string, msgs []Message) []Message {
 		maxMsgId = 0
 	}
 
-	for _, msg := range msgs {
+	for i, msg := range msgs {
 		maxMsgId++
 		msg.MsgId = maxMsgId
+		msgs[i] = msg
 	}
 
 	msgIdRecord[sessionKey] = maxMsgId
@@ -307,19 +308,22 @@ func addToInBox(sessionKey string, to uint64, msg Message) (isNew bool) {
 		unreadMsg = UnreadMsg{
 			SessionKey: sessionKey,
 			MsgId:      0,
-			Count:      1,
-			Msg:        msg,
+			Count:      0,
 		}
 	}
 
 	if unreadMsg.MsgId < msg.MsgId {
 		unreadMsg.Count += msg.MsgId - unreadMsg.MsgId
 		unreadMsg.MsgId = msg.MsgId
+		unreadMsg.Msg = msg
+
 		isNew = true
 
 		allMessages[sessionKey] = unreadMsg
 		inBox[to] = allMessages
 	}
+
+	logger.Infof("Add unreadMsg to inbox %d. msg: %+v", to, unreadMsg)
 
 	return
 }
@@ -334,19 +338,15 @@ func sendSendMsgResponse(userId, remoteId, rid, maxMsgId uint64, sessionKey stri
 	sendMessageToUser(userId, message)
 }
 
-func pushNew(userId uint64) {
-	message := NewMessage{
-		UserId: userId,
-	}
-
-	buf, err := json.Marshal(message)
+func pushNew(from, to uint64) {
+	message, err := BuildNewMessageBuf(from)
 
 	if err != nil {
-		logger.Errorf("Can not convert NewMessage %v to json", message)
+		logger.Errorf("Build NewMessage buf fail. From: %d. To: %d. Error: %d", from, to, err)
 		return
 	}
 
-	sendMessageToUser(userId, buf)
+	sendMessageToUser(to, message)
 }
 
 func sendMessageToUser(userId uint64, message []byte) {

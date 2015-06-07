@@ -94,9 +94,9 @@ func sendReadAckResponse(rid, userId uint64, sessionKey string) {
 
 func createSessionKey(id1, id2 uint64) string {
 	if id1 < id2 {
-		return strconv.FormatUint(id1, 10) + strconv.FormatUint(id2, 10)
+		return strconv.FormatUint(id1, 10)+ "_" + strconv.FormatUint(id2, 10)
 	} else {
-		return strconv.FormatUint(id2, 10) + strconv.FormatUint(id1, 10)
+		return strconv.FormatUint(id2, 10)+ "_" + strconv.FormatUint(id1, 10)
 	}
 }
 
@@ -270,7 +270,7 @@ func startClient(userId uint64) {
 }
 
 func sendSyncUnreadRequest(conn *net.TCPConn, userId uint64, sessionKey string) {
-	syncUnreadRequestBuf, err := BuildSyncUnreadRequestBuf(userId, "")
+	syncUnreadRequestBuf, err := BuildSyncUnreadRequestBuf(userId, sessionKey)
 	if err != nil {
 		logger.Errorf("Build SYNC_UNREAD_REQUEST error. Error: %s", err)
 		return
