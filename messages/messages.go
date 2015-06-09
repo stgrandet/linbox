@@ -84,11 +84,11 @@ type ReadAckResponse struct {
 }
 
 type PullOldMsgRequest struct {
-	RId      uint64 `json:"rId"`      // 客户端请求编号
-	FromId   uint64 `json:"fromId"`   // 用户 id
-	RemoteId uint64 `json:"remoteId"` //通信对方 id
-	MaxMsgId uint64 `json:"maxMsgId"` // 分页起始 id
-	Limit    uint64 `json:"limit"`    //分业内数量
+	RId        uint64 `json:"rId"`        // 客户端请求编号
+	FromId     uint64 `json:"fromId"`     // 用户 id
+	SessionKey string `json:"sessionKey"` // 对应的对话 session
+	MaxMsgId   uint64 `json:"maxMsgId"`   // 分页起始 id
+	Limit      uint64 `json:"limit"`      //分业内数量
 }
 
 type PullOldMsgResponse struct {

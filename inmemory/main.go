@@ -293,7 +293,9 @@ func sendReadAckRequest(conn *net.TCPConn, userId uint64, sessionKey string, msg
 }
 
 func sendPullOldMsgRequest(conn *net.TCPConn, from, to, msgId, limit uint64) {
-	buf, err := BuildPullOldMsgRequestBuf(from, to, msgId, limit)
+	sessionKey := createSessionKey(from,to)
+
+	buf, err := BuildPullOldMsgRequestBuf(from, sessionKey, msgId, limit)
 	if err != nil {
 		logger.Errorf("Build PULL_OLD_MSG_REQUEST error")
 		return

@@ -153,10 +153,9 @@ func (*testConnService) handlePullOldMsgRequest(msg []byte) {
 
 	rid := pullOldRequest.RId
 	userId := pullOldRequest.FromId
-	remoteId := pullOldRequest.RemoteId
+	sessionKey := pullOldRequest.SessionKey
 	maxMsgId := pullOldRequest.MaxMsgId
 	limit := pullOldRequest.Limit
-	sessionKey := createSessionKey(userId, remoteId)
 
 	msgs := getPersistMsg(sessionKey, maxMsgId, limit)
 

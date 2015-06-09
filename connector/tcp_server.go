@@ -70,8 +70,10 @@ func handleConnection(conn *net.TCPConn) {
 		return
 	}
 
-	go handleReceivingMsg(conn)
-	go handleSendingMsg(conn, userid)
+	shouldQuit := make(chan bool)
+
+	go handleReceivingMsg(conn, userid, shouldQuit)
+	go handleSendingMsg(conn, userid, shouldQuit)
 }
 
 func handleAuth(conn *net.TCPConn) (userid uint64, err error) {
@@ -147,9 +149,12 @@ func sendAuthResponse(conn *net.TCPConn, msg []byte) error {
 	return nil
 }
 
-func handleReceivingMsg(conn *net.TCPConn) {
+func handleReceivingMsg(conn *net.TCPConn, userid uint64, shouldQuit chan bool) {
 	defer func() {
+		shouldQuit<-true
 		conn.Close()
+
+		logger.Info("Close reading connection for user %d", )
 	}()
 
 	for {
@@ -188,7 +193,7 @@ func handleReceivingMsg(conn *net.TCPConn) {
 	}
 }
 
-func handleSendingMsg(conn *net.TCPConn, userid uint64) {
+func handleSendingMsg(conn *net.TCPConn, userid uint64, shouldQuit chan bool) {
 	defer conn.Close()
 
 	channel := make(chan []byte, sendingChannelSize)
@@ -197,27 +202,33 @@ func handleSendingMsg(conn *net.TCPConn, userid uint64) {
 	defer func() {
 		quit <- true
 		close(quit)
+
+		logger.Info("Close sending connection for user %d", userid)
 	}()
 
 	connService.HandleSendingMsg(userid, channel, quit)
 
+	loop:
 	for {
-		message, more := <-channel
+		select {
+		case message, more := <-channel:
+			if !more {
+				logger.Errorf("The sending channel is closed by connector service. Close connection")
+				break loop
+			}
 
-		if !more {
-			logger.Errorf("The sending channel is closed by connector service. Close connection")
-			break
-		}
+			now := time.Now()
+			timeout := now.Add(time.Second * time.Duration(writeTimeoutInSecond))
+			conn.SetWriteDeadline(timeout)
 
-		now := time.Now()
-		timeout := now.Add(time.Second * time.Duration(writeTimeoutInSecond))
-		conn.SetWriteDeadline(timeout)
+			_, err := conn.Write(message)
 
-		_, err := conn.Write(message)
-
-		if err != nil {
-			logger.Errorf("Sending messages for user %d Error. Close the connection. Error: %s", userid, err)
-			break
+			if err != nil {
+				logger.Errorf("Sending messages for user %d Error. Close the connection. Error: %s", userid, err)
+				break loop
+			}
+		case <-shouldQuit:
+			break loop
 		}
 	}
 }

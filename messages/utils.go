@@ -27,7 +27,7 @@ func BuildSyncUnreadResponseBuf(RId uint64, useRId uint64, unreadMsgs []UnreadMs
 	message := SyncUnreadResponse{
 		RId:       RId,
 		FromId:    useRId,
-		Unreads:    unreadMsgs,
+		Unreads:   unreadMsgs,
 		ErrorCode: errCode,
 		ErrorMsg:  errMsg,
 	}
@@ -76,13 +76,13 @@ func BuildReadAckResponseBuf(RId, useRId uint64, sessionKey string, errCode uint
 	return buildBuf(READ_ACK_RESPONSE, buf), nil
 }
 
-func BuildPullOldMsgRequestBuf(useRId, remoteId, maxMsgId, limit uint64) (buf []byte, err error) {
+func BuildPullOldMsgRequestBuf(useRId uint64, sessionKey string, maxMsgId, limit uint64) (buf []byte, err error) {
 	message := PullOldMsgRequest{
-		RId:      uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
-		FromId:   useRId,
-		RemoteId: remoteId,
-		MaxMsgId: maxMsgId,
-		Limit:    limit,
+		RId:        uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
+		FromId:     useRId,
+		SessionKey: sessionKey,
+		MaxMsgId:   maxMsgId,
+		Limit:      limit,
 	}
 
 	buf, err = json.Marshal(message)
@@ -98,7 +98,7 @@ func BuildPullOldMsgResponseBuf(RId, useRId uint64, msgs []Message, errCode uint
 	message := PullOldMsgResponse{
 		RId:       RId,
 		FromId:    useRId,
-		Msgs:       msgs,
+		Msgs:      msgs,
 		ErrorCode: errCode,
 		ErrorMsg:  errMsg,
 	}
@@ -114,10 +114,10 @@ func BuildPullOldMsgResponseBuf(RId, useRId uint64, msgs []Message, errCode uint
 
 func BuildSendMsgRequestBuf(from, to uint64, msg Message) (buf []byte, err error) {
 	message := SendMsgRequest{
-		RId:  uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
+		RId:    uint64(time.Now().UnixNano()) / uint64(time.Millisecond),
 		FromId: from,
 		ToId:   to,
-		Msg:  msg,
+		Msg:    msg,
 	}
 
 	buf, err = json.Marshal(message)
@@ -132,9 +132,9 @@ func BuildSendMsgRequestBuf(from, to uint64, msg Message) (buf []byte, err error
 func BuildSendMsgResponseBuf(RId, from, to, msgId, sendTime uint64, errCode uint32, errMsg string) (buf []byte, err error) {
 	message := SendMsgResponse{
 		RId:       RId,
-		FromId:      from,
-		ToId:        to,
-		MaxMsgId:     msgId,
+		FromId:    from,
+		ToId:      to,
+		MaxMsgId:  msgId,
 		SendTime:  sendTime,
 		ErrorCode: errCode,
 		ErrorMsg:  errMsg,
